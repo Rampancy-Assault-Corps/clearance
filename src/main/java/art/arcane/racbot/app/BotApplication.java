@@ -6,11 +6,7 @@ import art.arcane.racbot.config.ConfigLoader;
 import art.arcane.racbot.config.ConfigValidator;
 import art.arcane.racbot.discord.CommandRegistrar;
 import art.arcane.racbot.discord.listener.BotInteractionListener;
-import art.arcane.racbot.repository.GuildSettingsRepository;
-import art.arcane.racbot.repository.json.JsonGuildSettingsRepository;
 import art.arcane.racbot.service.EmbedFactory;
-import art.arcane.racbot.service.PermissionService;
-import art.arcane.racbot.service.SetupService;
 import art.arcane.racbot.util.ActivityParser;
 import java.io.IOException;
 import java.nio.file.FileSystems;
@@ -52,17 +48,8 @@ public final class BotApplication {
 
   private static BotRuntimeComponents buildRuntimeComponents(BotConfig config) {
     ConfigValidator.validate(config);
-
-    GuildSettingsRepository guildSettingsRepository =
-        new JsonGuildSettingsRepository(
-            config.runtime().dataDirPath(), config.storage().atomicWrites());
-
-    PermissionService permissionService = new PermissionService(config);
     EmbedFactory embedFactory = new EmbedFactory(config);
-    SetupService setupService = new SetupService(config, guildSettingsRepository);
-
-    return new BotRuntimeComponents(
-        config, setupService, permissionService, embedFactory);
+    return new BotRuntimeComponents(config, embedFactory);
   }
 
   private static void printStartupError(String title, String message, List<String> actions) {

@@ -21,6 +21,7 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import net.dv8tion.jda.api.events.message.MessageDeleteEvent;
 import net.dv8tion.jda.api.events.message.MessageUpdateEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
+import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,31 +84,7 @@ public class BotInteractionListener extends ListenerAdapter {
       return;
     }
 
-    event
-        .retrieveMessage()
-        .queue(
-            message -> {
-              if (message.getAuthor().getIdLong() != targetUserId) {
-                return;
-              }
-
-              message
-                  .addReaction(Emoji.fromUnicode(HEART_EMOJI))
-                  .queue(
-                      success -> {},
-                      error ->
-                          LOGGER.debug(
-                              "Failed to add mirrored heart reaction in channel {} for message {}",
-                              event.getChannel().getId(),
-                              event.getMessageId(),
-                              error));
-            },
-            error ->
-                LOGGER.debug(
-                    "Failed to fetch message {} in channel {} for heart mirror",
-                    event.getMessageId(),
-                    event.getChannel().getId(),
-                    error));
+    mirrorHeartReaction(event, targetUserId);
   }
 
   @Override
@@ -329,5 +306,40 @@ public class BotInteractionListener extends ListenerAdapter {
 
   static boolean isSupportedHeartEmoji(String reactionName) {
     return HEART_REACTION_NAMES.contains(reactionName);
+  }
+
+  private void mirrorHeartReaction(MessageReactionAddEvent event, long targetUserId) {
+    try {
+      event
+          .retrieveMessage()
+          .queue(
+              message -> {
+                if (message.getAuthor().getIdLong() != targetUserId) {
+                  return;
+                }
+
+                message
+                    .addReaction(Emoji.fromUnicode(HEART_EMOJI))
+                    .queue(
+                        success -> {},
+                        error ->
+                            LOGGER.debug(
+                                "Failed to add mirrored heart reaction in channel {} for message {}",
+                                event.getChannel().getId(),
+                                event.getMessageId(),
+                                error));
+              },
+              error ->
+                  LOGGER.debug(
+                      "Failed to fetch message {} in channel {} for heart mirror",
+                      event.getMessageId(),
+                      event.getChannel().getId(),
+                      error));
+    } catch (InsufficientPermissionException exception) {
+      LOGGER.debug(
+          "Skipping heart mirror in channel {} because MESSAGE_HISTORY is missing.",
+          event.getChannel().getId(),
+          exception);
+    }
   }
 }
