@@ -1,2 +1,6 @@
-
+.gradle/
+build/
 .idea/
+data/
+Data/
+config/bot.toml

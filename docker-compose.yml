@@ -1,0 +1,8 @@
+services:
+  racbot:
+    build: .
+    container_name: racbot
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config
+    restart: unless-stopped

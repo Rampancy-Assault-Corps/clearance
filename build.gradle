@@ -1,0 +1,177 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'checkstyle'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'com.diffplug.spotless' version '6.25.0'
+}
+
+def gradleJvmMajor = JavaVersion.current().majorVersion.toInteger()
+if (gradleJvmMajor != 21) {
+    throw new GradleException(
+            """
+RACBot requires Gradle to run on Java 21.
+Current Gradle JVM: ${JavaVersion.current()}
+
+Fix:
+1) In IntelliJ: Settings -> Build Tools -> Gradle -> Gradle JVM -> choose Java 21
+2) CLI: set JAVA_HOME to JDK 21 before running ./gradlew
+"""
+    )
+}
+
+group = 'art.arcane'
+version = '2.0.0'
+def fatJarName = "RACBot-${project.version}.jar"
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+application {
+    mainClass = 'art.arcane.racbot.app.BotApplication'
+}
+
+def botConfigPath = providers.gradleProperty('botConfig').orElse('config/bot.toml')
+def discordToken = providers.gradleProperty('discordToken')
+def ownerIds = providers.gradleProperty('ownerIds')
+def dataDir = providers.gradleProperty('dataDir')
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'net.dv8tion:JDA:5.6.1'
+    implementation 'org.slf4j:slf4j-api:2.0.13'
+    implementation 'ch.qos.logback:logback-classic:1.5.6'
+    implementation 'org.tomlj:tomlj:1.1.1'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.1'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.1'
+}
+
+tasks.withType(JavaExec).configureEach {
+    if (discordToken.present) {
+        systemProperty 'racbot.discordToken', discordToken.get()
+    }
+    if (ownerIds.present) {
+        systemProperty 'racbot.ownerIds', ownerIds.get()
+    }
+    if (dataDir.present) {
+        systemProperty 'racbot.dataDir', dataDir.get()
+    }
+    systemProperty 'racbot.config', botConfigPath.get()
+}
+
+tasks.named('run', JavaExec).configure {
+    group = 'application'
+    description = 'Run RACBot. Optional: -PdiscordToken=... -PbotConfig=config/bot.toml'
+    standardInput = System.in
+}
+
+tasks.register('runBot', JavaExec) {
+    group = 'application'
+    description = 'Run RACBot with optional overrides: -PdiscordToken=... -PbotConfig=...'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = application.mainClass
+    standardInput = System.in
+}
+
+tasks.register('runBotDebug', JavaExec) {
+    group = 'application'
+    description = 'Run RACBot with remote debug enabled on port 5005'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = application.mainClass
+    standardInput = System.in
+    jvmArgs '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005'
+}
+
+shadowJar {
+    archiveClassifier.set('')
+    archiveFileName = fatJarName
+}
+
+tasks.register('buildLocal', Copy) {
+    group = 'development'
+    description = 'Build and copy RACBot jar into build/targets/local as RACBot.jar'
+    dependsOn tasks.named('shadowJar')
+    from layout.buildDirectory.file("libs/${fatJarName}")
+    into layout.buildDirectory.dir('targets/local')
+    rename { String ignored -> 'RACBot.jar' }
+}
+
+tasks.register('buildTarget') {
+    group = 'development'
+    description = 'Build and copy RACBot jar to -PtargetDir=<path> (optional -PtargetName=RACBot.jar)'
+    dependsOn tasks.named('shadowJar')
+    doLast {
+        def targetDir = providers.gradleProperty('targetDir').orNull
+        if (targetDir == null || targetDir.trim().isEmpty()) {
+            throw new GradleException('Missing -PtargetDir=<absolute-or-relative-path> for buildTarget task')
+        }
+
+        def targetName = providers.gradleProperty('targetName').orElse('RACBot.jar').get()
+        copy {
+            from layout.buildDirectory.file("libs/${fatJarName}")
+            into file(targetDir)
+            rename { String ignored -> targetName }
+        }
+        logger.lifecycle("Copied ${fatJarName} to ${file(targetDir).absolutePath}/${targetName}")
+    }
+}
+
+def registerCustomOutputTask = { String name, String outputPath ->
+    if (!System.getProperty('os.name').toLowerCase().contains('windows')) {
+        return
+    }
+    tasks.register("build${name}", Copy) {
+        group = 'development'
+        description = "Build and copy RACBot jar to ${outputPath}"
+        outputs.upToDateWhen { false }
+        dependsOn tasks.named('shadowJar')
+        from layout.buildDirectory.file("libs/${fatJarName}")
+        into file(outputPath)
+        rename { String ignored -> 'RACBot.jar' }
+    }
+}
+
+def registerCustomOutputTaskUnix = { String name, String outputPath ->
+    if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+        return
+    }
+    tasks.register("build${name}", Copy) {
+        group = 'development'
+        description = "Build and copy RACBot jar to ${outputPath}"
+        outputs.upToDateWhen { false }
+        dependsOn tasks.named('shadowJar')
+        from layout.buildDirectory.file("libs/${fatJarName}")
+        into file(outputPath)
+        rename { String ignored -> 'RACBot.jar' }
+    }
+}
+
+// Named build targets (edit these paths for your machine)
+// ======================== WINDOWS =============================
+//registerCustomOutputTask('Psycho', 'C://Dan/MinecraftDevelopment/Server/plugins')
+// ========================== UNIX ==============================
+registerCustomOutputTaskUnix('PsychoLT', '/Users/brianfopiano/Desktop/DiscordBotCrap')
+// ==============================================================
+
+tasks.named('build') {
+    dependsOn tasks.named('shadowJar')
+}
+
+spotless {
+    java {
+        target 'src/**/*.java'
+        googleJavaFormat('1.22.0')
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('spotlessCheck')
+}

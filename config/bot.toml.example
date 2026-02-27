@@ -1,0 +1,66 @@
+# RACBot configuration
+# This file is hot-reloaded while the bot is running.
+# Save changes to apply them without restart (except Discord session token swaps may reconnect).
+
+[bot]
+# Activity format:
+#   watching:<text>
+#   playing:<text>
+#   listening:<text>
+#   competing:<text>
+activity = "watching:Support channels"
+# Allowed values: ONLINE, IDLE, DO_NOT_DISTURB, INVISIBLE
+online_status = "ONLINE"
+# Command registration strategy:
+#   GLOBAL -> register commands globally (can take time to propagate)
+#   GUILD  -> register commands only in dev_guild_id (fast for development)
+command_registration_mode = "GLOBAL"
+# Required only when command_registration_mode = "GUILD".
+# Use your Discord server ID.
+# dev_guild_id = 123456789012345678
+
+[branding]
+# Company/brand label shown in embeds and footer text.
+company_name = "Arcane Arts"
+# Primary embed color in hex (6 digits, with or without leading #).
+primary_color = "#0EA5E9"
+# Icon URL used in embed footers.
+avatar_url = "https://volmit.com/img/logo.png"
+
+[storage]
+# Base folder for bot runtime data.
+# Relative paths are resolved from the process working directory.
+data_dir = "./data"
+# true  -> write JSON via temp+move strategy (safer)
+# false -> direct writes
+atomic_writes = true
+
+[logs]
+# Channel IDs for log output.
+# Leave as 0 to disable a given log stream.
+user_log_channel_id = 0
+comm_log_channel_id = 0
+audit_log_channel_id = 0
+# When someone reacts with a heart to this user's message,
+# the bot will add a heart reaction too.
+heart_target_user_id = 173261518572486656
+
+[features]
+# Feature flags (true/false) for command modules.
+enable_ping = true
+enable_links = false
+enable_logguide = false
+enable_notify = false
+enable_setup = false
+
+[runtime]
+# Discord bot token from Discord Developer Portal.
+# Runtime token precedence:
+#   1) DISCORD_TOKEN environment variable
+#   2) -PdiscordToken=... Gradle run property
+#   3) runtime.discord_token in this TOML
+# Leave blank here if you provide DISCORD_TOKEN or -PdiscordToken.
+discord_token = ""
+# Owner user IDs with command bypass permissions.
+# Example: [123456789012345678, 987654321098765432]
+owner_ids = []
