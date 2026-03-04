@@ -1,0 +1,19 @@
+name: racbot_nyxx
+description: RACBot migrated to Dart with Nyxx
+publish_to: none
+version: 1.0.0
+
+environment:
+  sdk: ^3.10.0
+
+dependencies:
+  nyxx: ^6.8.1
+  nyxx_commands: ^6.1.0
+  toml: ^0.18.0
+  logging: ^1.3.0
+  args: ^2.7.0
+  path: ^1.9.1
+
+dev_dependencies:
+  test: ^1.25.8
+  lints: ^6.0.0

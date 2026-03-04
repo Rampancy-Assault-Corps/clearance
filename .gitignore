@@ -1,6 +1,6 @@
-.gradle/
+.dart_tool/
+.packages
 build/
 .idea/
-data/
-Data/
 config/bot.toml
+data/

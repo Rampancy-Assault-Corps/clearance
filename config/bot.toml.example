@@ -57,9 +57,9 @@ enable_setup = false
 # Discord bot token from Discord Developer Portal.
 # Runtime token precedence:
 #   1) DISCORD_TOKEN environment variable
-#   2) -PdiscordToken=... Gradle run property
+#   2) --discord-token=... CLI flag
 #   3) runtime.discord_token in this TOML
-# Leave blank here if you provide DISCORD_TOKEN or -PdiscordToken.
+# Leave blank here if you provide DISCORD_TOKEN or --discord-token.
 discord_token = ""
 # Owner user IDs with command bypass permissions.
 # Example: [123456789012345678, 987654321098765432]
