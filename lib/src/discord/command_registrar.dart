@@ -3,9 +3,10 @@ import 'package:nyxx_commands/nyxx_commands.dart';
 import 'package:racbot_nyxx/src/config/bot_config.dart';
 import 'package:racbot_nyxx/src/config/command_registration_mode.dart';
 import 'package:racbot_nyxx/src/discord/ping_command_module.dart';
+import 'package:racbot_nyxx/src/util/app_logger.dart';
 
 class CommandRegistrar {
-  final Logger logger;
+  final AppLogger logger;
 
   const CommandRegistrar({required this.logger});
 

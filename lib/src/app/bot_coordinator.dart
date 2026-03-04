@@ -14,9 +14,10 @@ import 'package:racbot_nyxx/src/discord/ping_command_module.dart';
 import 'package:racbot_nyxx/src/model/bot_runtime_components.dart';
 import 'package:racbot_nyxx/src/service/embed_factory.dart';
 import 'package:racbot_nyxx/src/util/activity_parser.dart';
+import 'package:racbot_nyxx/src/util/app_logger.dart';
 
 class BotCoordinator {
-  final Logger logger = Logger('BotCoordinator');
+  final AppLogger logger = const AppLogger(scope: 'BotCoordinator');
 
   final String configPath;
   final ConfigOverrides overrides;
@@ -193,7 +194,7 @@ class BotCoordinator {
     PingCommandModule pingCommandModule = PingCommandModule(
       commandsPlugin: commandsPlugin,
       runtimeProvider: runtimeComponents,
-      logger: Logger('PingCommandModule'),
+      logger: const AppLogger(scope: 'PingCommandModule'),
     );
 
     try {
@@ -205,7 +206,7 @@ class BotCoordinator {
             GatewayIntents.guildModeration |
             GatewayIntents.messageContent,
         options: GatewayClientOptions(
-          plugins: [commandsPlugin, logging, cliIntegration, ignoreExceptions],
+          plugins: [commandsPlugin, cliIntegration, ignoreExceptions],
         ),
       );
 
@@ -319,7 +320,7 @@ class BotCoordinator {
 
     BotEventHandlers handlers = BotEventHandlers(
       runtimeProvider: runtimeComponents,
-      logger: Logger('BotEventHandlers'),
+      logger: const AppLogger(scope: 'BotEventHandlers'),
     );
 
     List<StreamSubscription<dynamic>> subscriptions = handlers.register(

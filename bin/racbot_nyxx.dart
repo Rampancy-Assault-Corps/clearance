@@ -2,15 +2,14 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:args/args.dart';
-import 'package:logging/logging.dart';
+import 'package:fast_log/fast_log.dart';
 import 'package:path/path.dart' as p;
 import 'package:racbot_nyxx/src/app/bot_coordinator.dart';
 import 'package:racbot_nyxx/src/config/config_loader.dart';
 import 'package:racbot_nyxx/src/discord/command_registrar.dart';
+import 'package:racbot_nyxx/src/util/app_logger.dart';
 
 Future<void> main(List<String> args) async {
-  _configureLogging();
-
   ArgParser parser = ArgParser()
     ..addOption('config', defaultsTo: 'config/bot.toml')
     ..addOption('discord-token')
@@ -21,7 +20,7 @@ Future<void> main(List<String> args) async {
   ArgResults results = parser.parse(args);
 
   if (results['help'] == true) {
-    Logger('RACBot').info(parser.usage);
+    info(parser.usage);
     return;
   }
 
@@ -40,7 +39,9 @@ Future<void> main(List<String> args) async {
     configPath: configPath,
     overrides: overrides,
     configLoader: ConfigLoader(),
-    commandRegistrar: CommandRegistrar(logger: Logger('CommandRegistrar')),
+    commandRegistrar: CommandRegistrar(
+      logger: const AppLogger(scope: 'CommandRegistrar'),
+    ),
   );
 
   StreamSubscription<ProcessSignal> sigIntSubscription = ProcessSignal.sigint
@@ -64,17 +65,4 @@ Future<void> main(List<String> args) async {
     await sigIntSubscription.cancel();
     await sigTermSubscription.cancel();
   }
-}
-
-void _configureLogging() {
-  Logger.root.level = Level.INFO;
-  Logger.root.onRecord.listen((LogRecord record) {
-    String level = record.level.name.padRight(5);
-    String time = record.time.toIso8601String();
-    String errorText = record.error == null ? '' : ' ${record.error}';
-    print('$time $level [${record.loggerName}] ${record.message}$errorText');
-    if (record.stackTrace != null) {
-      print(record.stackTrace);
-    }
-  });
 }

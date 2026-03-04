@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
 import 'package:racbot_nyxx/src/model/bot_runtime_components.dart';
+import 'package:racbot_nyxx/src/util/app_logger.dart';
 import 'package:racbot_nyxx/src/util/discord_formatters.dart';
 import 'package:racbot_nyxx/src/util/reaction_utils.dart';
 import 'package:racbot_nyxx/src/util/text_utils.dart';
@@ -12,7 +13,7 @@ class BotEventHandlers {
   static const int maxContentPreview = 900;
 
   final RuntimeProvider runtimeProvider;
-  final Logger logger;
+  final AppLogger logger;
 
   const BotEventHandlers({required this.runtimeProvider, required this.logger});
 

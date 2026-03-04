@@ -3,13 +3,14 @@ import 'package:nyxx_commands/nyxx_commands.dart';
 import 'package:racbot_nyxx/src/config/bot_config.dart';
 import 'package:racbot_nyxx/src/config/command_registration_mode.dart';
 import 'package:racbot_nyxx/src/model/bot_runtime_components.dart';
+import 'package:racbot_nyxx/src/util/app_logger.dart';
 
 typedef RuntimeProvider = BotRuntimeComponents? Function();
 
 class PingCommandModule {
   final CommandsPlugin commandsPlugin;
   final RuntimeProvider runtimeProvider;
-  final Logger logger;
+  final AppLogger logger;
 
   bool _pingCommandAdded = false;
 
@@ -77,7 +78,7 @@ class PingCommandModule {
     return ChatCommand(
       'ping',
       'Check bot latency',
-      id('ping', (ChatContext context) async {
+      id('ping', (InteractionChatContext context) async {
         BotRuntimeComponents? components = runtimeProvider();
         if (components == null) {
           await context.respond(
