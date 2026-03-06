@@ -53,6 +53,10 @@ enable_logguide = false
 enable_notify = false
 enable_setup = false
 
+[link_sync]
+runner_role_id = 0
+service_account_path = "./service-account.json"
+
 [runtime]
 # Discord bot token from Discord Developer Portal.
 # Runtime token precedence:

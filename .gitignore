@@ -3,4 +3,5 @@
 build/
 .idea/
 config/bot.toml
+config/service-account.json
 data/

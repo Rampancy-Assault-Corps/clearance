@@ -80,6 +80,10 @@ enable_logguide = false
 enable_notify = false
 enable_setup = false
 
+[link_sync]
+runner_role_id = 0
+service_account_path = "./service-account.json"
+
 [runtime]
 # Discord bot token from Discord Developer Portal.
 # Runtime token precedence:
@@ -138,10 +142,15 @@ owner_ids = []
       rootMap: rootMap,
       key: 'features',
     );
+    Map<String, Object?> linkSyncSection = _section(
+      rootMap: rootMap,
+      key: 'link_sync',
+    );
     Map<String, Object?> runtimeSection = _section(
       rootMap: rootMap,
       key: 'runtime',
     );
+    String configDirectoryPath = p.dirname(normalizedPath);
 
     BotSection bot = BotSection(
       activity: _stringValue(
@@ -261,6 +270,21 @@ owner_ids = []
       ),
     );
 
+    LinkSyncSection linkSync = LinkSyncSection(
+      runnerRoleId: _nullableSnowflakeValue(
+        section: linkSyncSection,
+        key: 'runner_role_id',
+      ),
+      serviceAccountPath: _resolvePath(
+        baseDirectoryPath: configDirectoryPath,
+        value: _stringValue(
+          section: linkSyncSection,
+          key: 'service_account_path',
+          fallback: './service-account.json',
+        ),
+      ),
+    );
+
     String envToken = environment['DISCORD_TOKEN'] ?? '';
     String token = _firstNonBlank(
       values: <String?>[
@@ -301,6 +325,7 @@ owner_ids = []
       storage: storage,
       logs: logs,
       features: features,
+      linkSync: linkSync,
       runtime: runtime,
     );
 
@@ -501,6 +526,20 @@ owner_ids = []
       }
     }
     return '';
+  }
+
+  static String _resolvePath({
+    required String baseDirectoryPath,
+    required String value,
+  }) {
+    String normalizedValue = value.trim();
+    if (normalizedValue.isEmpty) {
+      return '';
+    }
+    if (p.isAbsolute(normalizedValue)) {
+      return p.normalize(normalizedValue);
+    }
+    return p.normalize(p.absolute(p.join(baseDirectoryPath, normalizedValue)));
   }
 
   static void _ensureTemplateFiles({required String configPath}) {

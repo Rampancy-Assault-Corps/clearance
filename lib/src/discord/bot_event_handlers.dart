@@ -73,6 +73,14 @@ class BotEventHandlers {
       return;
     }
 
+    if (components.runnerRoleSyncService != null) {
+      await components.runnerRoleSyncService!.assignRunnerRoleIfLinked(
+        client: client,
+        guildId: event.guildId,
+        member: event.member,
+      );
+    }
+
     PartialTextChannel? channel = _resolveLogChannel(
       client: client,
       channelId: components.config.logs.userLogChannelId,

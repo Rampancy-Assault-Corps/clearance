@@ -7,6 +7,7 @@ class BotConfig {
   final StorageSection storage;
   final LogsSection logs;
   final FeaturesSection features;
+  final LinkSyncSection linkSync;
   final RuntimeSection runtime;
 
   const BotConfig({
@@ -16,6 +17,7 @@ class BotConfig {
     required this.storage,
     required this.logs,
     required this.features,
+    required this.linkSync,
     required this.runtime,
   });
 }
@@ -92,6 +94,16 @@ class FeaturesSection {
     required this.logGuideEnabled,
     required this.notifyEnabled,
     required this.setupEnabled,
+  });
+}
+
+class LinkSyncSection {
+  final int? runnerRoleId;
+  final String serviceAccountPath;
+
+  const LinkSyncSection({
+    required this.runnerRoleId,
+    required this.serviceAccountPath,
   });
 }
 

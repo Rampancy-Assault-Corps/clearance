@@ -13,6 +13,8 @@ import 'package:racbot_nyxx/src/discord/command_registrar.dart';
 import 'package:racbot_nyxx/src/discord/ping_command_module.dart';
 import 'package:racbot_nyxx/src/model/bot_runtime_components.dart';
 import 'package:racbot_nyxx/src/service/embed_factory.dart';
+import 'package:racbot_nyxx/src/service/firebase_account_link_repository.dart';
+import 'package:racbot_nyxx/src/service/runner_role_sync_service.dart';
 import 'package:racbot_nyxx/src/util/activity_parser.dart';
 import 'package:racbot_nyxx/src/util/app_logger.dart';
 
@@ -36,6 +38,7 @@ class BotCoordinator {
 
   StreamSubscription<FileSystemEvent>? _watchSubscription;
   Timer? _watchDebounce;
+  Timer? _runnerRoleSyncTimer;
 
   final List<StreamSubscription<dynamic>> _eventSubscriptions =
       <StreamSubscription<dynamic>>[];
@@ -129,8 +132,10 @@ class BotCoordinator {
       return;
     }
 
+    BotRuntimeComponents? previousRuntime = _runtime;
     _runtime = updated;
-    await _applyLiveConfig(config: updated.config);
+    await _applyLiveConfig(updated: updated);
+    await _disposeRuntimeComponents(previousRuntime);
     logger.info('Applied TOML hotload ($reason)');
   }
 
@@ -179,7 +184,25 @@ class BotCoordinator {
   BotRuntimeComponents _buildRuntimeComponents({required BotConfig config}) {
     ConfigValidator.validate(config);
     EmbedFactory embedFactory = EmbedFactory(config: config);
-    return BotRuntimeComponents(config: config, embedFactory: embedFactory);
+    RunnerRoleSyncService? runnerRoleSyncService;
+    int? runnerRoleId = config.linkSync.runnerRoleId;
+    if (runnerRoleId != null) {
+      FirebaseAccountLinkRepository repository = FirebaseAccountLinkRepository(
+        serviceAccountPath: config.linkSync.serviceAccountPath,
+        logger: const AppLogger(scope: 'FirebaseAccountLinkRepository'),
+      );
+      runnerRoleSyncService = RunnerRoleSyncService(
+        runnerRoleId: runnerRoleId,
+        repository: repository,
+        logger: const AppLogger(scope: 'RunnerRoleSyncService'),
+      );
+    }
+
+    return BotRuntimeComponents(
+      config: config,
+      embedFactory: embedFactory,
+      runnerRoleSyncService: runnerRoleSyncService,
+    );
   }
 
   Future<void> _startClient({
@@ -231,6 +254,7 @@ class BotCoordinator {
         );
       }
 
+      await _configureRunnerRoleSync(client: client, runtime: updated);
       await _applyPresence(config: updated.config);
 
       User selfUser = await client.users.fetchCurrentUser();
@@ -240,6 +264,7 @@ class BotCoordinator {
 
       logger.info('Bot is online as $tag (trigger: $reason)');
     } on Object catch (error, stackTrace) {
+      await _disposeRuntimeComponents(updated);
       _runtime = null;
       _client = null;
       _commandsPlugin = null;
@@ -272,26 +297,27 @@ class BotCoordinator {
     }
   }
 
-  Future<void> _applyLiveConfig({required BotConfig config}) async {
+  Future<void> _applyLiveConfig({required BotRuntimeComponents updated}) async {
     if (_client == null ||
         _commandsPlugin == null ||
         _pingCommandModule == null) {
       return;
     }
 
-    await _applyPresence(config: config);
+    await _configureRunnerRoleSync(client: _client!, runtime: updated);
+    await _applyPresence(config: updated.config);
 
     bool addedNow = _pingCommandModule!.ensurePingCommandEnabled(
-      config: config,
+      config: updated.config,
       client: _client!,
     );
 
-    if (config.features.pingEnabled && !addedNow) {
+    if (updated.config.features.pingEnabled && !addedNow) {
       await commandRegistrar.register(
         client: _client!,
         commandsPlugin: _commandsPlugin!,
         pingCommandModule: _pingCommandModule!,
-        config: config,
+        config: updated.config,
       );
     }
   }
@@ -330,6 +356,9 @@ class BotCoordinator {
   }
 
   Future<void> _shutdownClient() async {
+    _runnerRoleSyncTimer?.cancel();
+    _runnerRoleSyncTimer = null;
+
     for (StreamSubscription<dynamic> subscription in _eventSubscriptions) {
       await subscription.cancel();
     }
@@ -341,11 +370,62 @@ class BotCoordinator {
       await client.close();
     }
 
+    BotRuntimeComponents? runtime = _runtime;
     _runtime = null;
     _client = null;
     _commandsPlugin = null;
     _pingCommandModule = null;
     _activeToken = null;
+    await _disposeRuntimeComponents(runtime);
+  }
+
+  Future<void> _configureRunnerRoleSync({
+    required NyxxGateway client,
+    required BotRuntimeComponents runtime,
+  }) async {
+    _runnerRoleSyncTimer?.cancel();
+    _runnerRoleSyncTimer = null;
+
+    RunnerRoleSyncService? runnerRoleSyncService =
+        runtime.runnerRoleSyncService;
+    if (runnerRoleSyncService == null) {
+      return;
+    }
+
+    try {
+      await runnerRoleSyncService.syncAllGuilds(client: client, force: true);
+    } on Object catch (error, stackTrace) {
+      logger.severe(
+        'Runner role sync failed during initialization.',
+        error,
+        stackTrace,
+      );
+    }
+
+    _runnerRoleSyncTimer = Timer.periodic(RunnerRoleSyncService.syncInterval, (
+      Timer _,
+    ) {
+      Future<void> syncFuture = runnerRoleSyncService.syncAllGuilds(
+        client: client,
+        force: false,
+      );
+      syncFuture.catchError((Object error, StackTrace stackTrace) {
+        logger.severe(
+          'Runner role sync failed during scheduled run.',
+          error,
+          stackTrace,
+        );
+      });
+    });
+  }
+
+  Future<void> _disposeRuntimeComponents(BotRuntimeComponents? runtime) async {
+    RunnerRoleSyncService? runnerRoleSyncService =
+        runtime?.runnerRoleSyncService;
+    if (runnerRoleSyncService == null) {
+      return;
+    }
+    await runnerRoleSyncService.dispose();
   }
 
   void _handleConfigException(ConfigException exception) {

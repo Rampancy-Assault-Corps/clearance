@@ -33,11 +33,22 @@ class ConfigValidator {
       value: config.logs.auditLogChannelId,
       key: 'logs.audit_log_channel_id',
     );
+    _validateOptionalSnowflake(
+      value: config.linkSync.runnerRoleId,
+      key: 'link_sync.runner_role_id',
+    );
 
     if (config.logs.heartTargetUserId <= 0) {
       throw const ConfigException(
         message:
             'logs.heart_target_user_id must be a positive Discord user id.',
+      );
+    }
+
+    if (config.linkSync.runnerRoleId != null &&
+        config.linkSync.serviceAccountPath.trim().isEmpty) {
+      throw const ConfigException(
+        message: 'link_sync.service_account_path must resolve to a valid path.',
       );
     }
 
