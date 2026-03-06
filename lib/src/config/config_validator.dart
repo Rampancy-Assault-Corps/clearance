@@ -29,6 +29,14 @@ class ConfigValidator {
       value: config.logs.commLogChannelId,
       key: 'logs.comm_log_channel_id',
     );
+    _validateSnowflakeSet(
+      values: config.logs.commLogCategoryIds,
+      key: 'logs.comm_log_category_ids',
+    );
+    _validateSnowflakeSet(
+      values: config.logs.commLogSourceChannelIds,
+      key: 'logs.comm_log_source_channel_ids',
+    );
     _validateOptionalSnowflake(
       value: config.logs.auditLogChannelId,
       key: 'logs.audit_log_channel_id',
@@ -42,6 +50,16 @@ class ConfigValidator {
       throw const ConfigException(
         message:
             'logs.heart_target_user_id must be a positive Discord user id.',
+      );
+    }
+
+    bool deleteLogConfigured =
+        config.logs.commLogCategoryIds.isNotEmpty ||
+        config.logs.commLogSourceChannelIds.isNotEmpty;
+    if (deleteLogConfigured && config.logs.commLogChannelId == null) {
+      throw const ConfigException(
+        message:
+            'logs.comm_log_channel_id must be set when delete log category or channel filters are configured.',
       );
     }
 
@@ -67,6 +85,17 @@ class ConfigValidator {
       throw ConfigException(
         message: '$key must be a positive Discord channel id.',
       );
+    }
+  }
+
+  static void _validateSnowflakeSet({
+    required Set<int> values,
+    required String key,
+  }) {
+    for (int value in values) {
+      if (value <= 0) {
+        throw ConfigException(message: '$key must contain only positive ids.');
+      }
     }
   }
 }

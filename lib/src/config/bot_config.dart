@@ -70,12 +70,16 @@ class StorageSection {
 class LogsSection {
   final int? userLogChannelId;
   final int? commLogChannelId;
+  final Set<int> commLogCategoryIds;
+  final Set<int> commLogSourceChannelIds;
   final int? auditLogChannelId;
   final int heartTargetUserId;
 
   const LogsSection({
     required this.userLogChannelId,
     required this.commLogChannelId,
+    required this.commLogCategoryIds,
+    required this.commLogSourceChannelIds,
     required this.auditLogChannelId,
     required this.heartTargetUserId,
   });

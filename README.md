@@ -34,8 +34,16 @@ dart run bin/racbot_nyxx.dart --config=config/bot.toml
 
 ```bash
 ./tool/compile.sh
-./build/racbot_nyxx --config=config/bot.toml
+./tool/run_compiled.sh
 ```
+
+Targets:
+
+- `./tool/compile.sh --target exe`
+- `./tool/compile.sh --target exe --target-os linux --target-arch x64`
+- `./tool/compile.sh --target jit-snapshot`
+- `./tool/compile.sh --target aot-snapshot`
+- `./tool/compile.sh --target kernel`
 
 ## Docker
 

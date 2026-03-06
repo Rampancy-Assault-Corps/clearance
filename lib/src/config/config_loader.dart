@@ -67,6 +67,8 @@ atomic_writes = true
 # Leave as 0 to disable a given log stream.
 user_log_channel_id = 0
 comm_log_channel_id = 0
+comm_log_category_ids = []
+comm_log_source_channel_ids = []
 audit_log_channel_id = 0
 # When someone reacts with a heart to this user's message,
 # the bot will add a heart reaction too.
@@ -230,6 +232,14 @@ owner_ids = []
       commLogChannelId: _nullableSnowflakeValue(
         section: logsSection,
         key: 'comm_log_channel_id',
+      ),
+      commLogCategoryIds: _snowflakeSetValue(
+        section: logsSection,
+        key: 'comm_log_category_ids',
+      ),
+      commLogSourceChannelIds: _snowflakeSetValue(
+        section: logsSection,
+        key: 'comm_log_source_channel_ids',
       ),
       auditLogChannelId: _nullableSnowflakeValue(
         section: logsSection,
@@ -517,6 +527,47 @@ owner_ids = []
     }
 
     return ids;
+  }
+
+  static Set<int> _snowflakeSetValue({
+    required Map<String, Object?> section,
+    required String key,
+  }) {
+    Object? raw = section[key];
+    if (raw == null) {
+      return <int>{};
+    }
+    if (raw is! List) {
+      throw ConfigException(message: '$key must be a list of Discord ids.');
+    }
+
+    Set<int> values = <int>{};
+    for (Object? item in raw) {
+      int? value = _snowflakeListItemValue(value: item);
+      if (value == null) {
+        throw ConfigException(message: 'Invalid Discord id in $key: $item');
+      }
+      values.add(value);
+    }
+    return values;
+  }
+
+  static int? _snowflakeListItemValue({required Object? value}) {
+    if (value is int) {
+      return value > 0 ? value : null;
+    }
+    if (value is num) {
+      int parsed = value.toInt();
+      return parsed > 0 ? parsed : null;
+    }
+    if (value is String) {
+      int? parsed = int.tryParse(value.trim());
+      if (parsed == null || parsed <= 0) {
+        return null;
+      }
+      return parsed;
+    }
+    return null;
   }
 
   static String _firstNonBlank({required List<String?> values}) {

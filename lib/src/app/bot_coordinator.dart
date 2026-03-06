@@ -14,6 +14,7 @@ import 'package:racbot_nyxx/src/discord/ping_command_module.dart';
 import 'package:racbot_nyxx/src/model/bot_runtime_components.dart';
 import 'package:racbot_nyxx/src/service/embed_factory.dart';
 import 'package:racbot_nyxx/src/service/firebase_account_link_repository.dart';
+import 'package:racbot_nyxx/src/service/role_persistence_service.dart';
 import 'package:racbot_nyxx/src/service/runner_role_sync_service.dart';
 import 'package:racbot_nyxx/src/util/activity_parser.dart';
 import 'package:racbot_nyxx/src/util/app_logger.dart';
@@ -184,6 +185,11 @@ class BotCoordinator {
   BotRuntimeComponents _buildRuntimeComponents({required BotConfig config}) {
     ConfigValidator.validate(config);
     EmbedFactory embedFactory = EmbedFactory(config: config);
+    RolePersistenceService rolePersistenceService = RolePersistenceService(
+      dataDirPath: config.runtime.dataDirPath,
+      atomicWrites: config.storage.atomicWrites,
+      logger: const AppLogger(scope: 'RolePersistenceService'),
+    );
     RunnerRoleSyncService? runnerRoleSyncService;
     int? runnerRoleId = config.linkSync.runnerRoleId;
     if (runnerRoleId != null) {
@@ -201,6 +207,7 @@ class BotCoordinator {
     return BotRuntimeComponents(
       config: config,
       embedFactory: embedFactory,
+      rolePersistenceService: rolePersistenceService,
       runnerRoleSyncService: runnerRoleSyncService,
     );
   }
@@ -420,12 +427,16 @@ class BotCoordinator {
   }
 
   Future<void> _disposeRuntimeComponents(BotRuntimeComponents? runtime) async {
-    RunnerRoleSyncService? runnerRoleSyncService =
-        runtime?.runnerRoleSyncService;
-    if (runnerRoleSyncService == null) {
+    if (runtime == null) {
       return;
     }
-    await runnerRoleSyncService.dispose();
+
+    RunnerRoleSyncService? runnerRoleSyncService =
+        runtime.runnerRoleSyncService;
+    if (runnerRoleSyncService != null) {
+      await runnerRoleSyncService.dispose();
+    }
+    await runtime.rolePersistenceService.close();
   }
 
   void _handleConfigException(ConfigException exception) {

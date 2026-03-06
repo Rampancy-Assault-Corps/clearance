@@ -40,6 +40,8 @@ atomic_writes = true
 # Leave as 0 to disable a given log stream.
 user_log_channel_id = 0
 comm_log_channel_id = 0
+comm_log_category_ids = []
+comm_log_source_channel_ids = []
 audit_log_channel_id = 0
 # When someone reacts with a heart to this user's message,
 # the bot will add a heart reaction too.

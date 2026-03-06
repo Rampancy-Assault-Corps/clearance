@@ -1,7 +1,10 @@
 .dart_tool/
 .packages
 build/
+OutPut/*
 .idea/
 config/bot.toml
 config/service-account.json
 data/
+
+config/Archive.zip
